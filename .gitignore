@@ -22,3 +22,11 @@
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 replay_pid*
+/s3-processing-with-aws-lambda/software/s3-event-processor/target/
+
+/s3-processing-with-aws-lambda/software/charge-usage-domain/target/
+/.idea/
+
+# CDK asset staging directory
+.cdk.staging
+cdk.out
