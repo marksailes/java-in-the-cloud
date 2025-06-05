@@ -30,3 +30,4 @@ replay_pid*
 # CDK asset staging directory
 .cdk.staging
 cdk.out
+/s3-processing-with-aws-lambda/infrastructure/db-setup/target/

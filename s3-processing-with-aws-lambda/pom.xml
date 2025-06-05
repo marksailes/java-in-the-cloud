@@ -12,6 +12,7 @@
     <modules>
         <module>software/charge-usage-domain</module>
         <module>software/s3-event-processor</module>
+        <module>infrastructure/db-setup</module>
     </modules>
 
     <properties>

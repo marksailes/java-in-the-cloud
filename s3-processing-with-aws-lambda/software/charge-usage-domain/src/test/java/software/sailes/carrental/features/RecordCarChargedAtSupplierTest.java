@@ -18,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @SpringBootTest
 class RecordCarChargedAtSupplierTest {
 
+    public static final String SUPPLIER_NAME = "QuickCharging";
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>(
             "postgres:16-alpine"
     );
@@ -48,7 +49,7 @@ class RecordCarChargedAtSupplierTest {
 
     @Test
     public void recordSingleChargingEvent() {
-        SupplierChargeRecord supplierChargeRecord = new SupplierChargeRecord(new CarId(), "QuickCharging", 10);
+        SupplierChargeRecord supplierChargeRecord = new SupplierChargeRecord(new CarId(), SUPPLIER_NAME, 10);
 
         CarChargeId carChargeId = recordCarChargedAtSupplier.recordCarCharge(supplierChargeRecord);
 

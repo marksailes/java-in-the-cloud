@@ -2,6 +2,7 @@ package software.sailes.carrental;
 
 import com.amazonaws.services.lambda.runtime.events.S3Event;
 import com.amazonaws.services.lambda.runtime.events.models.s3.S3EventNotification;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -34,8 +35,6 @@ import static software.sailes.carrental.TestData.createS3Record;
 @Testcontainers
 @SpringBootTest(classes = ProcessSupplierChargeS3Objects.class)
 class ProcessSupplierChargeS3ObjectsTest {
-
-    private Function<S3Event, Void> handleS3EventFunction;
 
     private static final DockerImageName localstackImage = DockerImageName.parse("localstack/localstack:3.5.0");
 
@@ -84,28 +83,31 @@ class ProcessSupplierChargeS3ObjectsTest {
                 .build();
 
         ProcessSupplierChargeS3Objects handler = new ProcessSupplierChargeS3Objects(recordCarChargedAtSupplier, s3Client);
-        handleS3EventFunction = handler.handleS3Event();
     }
 
     @Test
     public void endToEndTest() {
+        ProcessSupplierChargeS3Objects processSupplierChargeS3Objects = new ProcessSupplierChargeS3Objects(recordCarChargedAtSupplier, s3Client);
+        Function<S3Event, Void> s3EventVoidFunction = processSupplierChargeS3Objects.handleS3Event();
+        S3EventNotification.S3EventNotificationRecord notificationRecord = addTestDataToS3("single-record.csv");
+
+        s3EventVoidFunction.apply(new S3Event(List.of((notificationRecord))));
+
+        List<CarCharge> allByCarId = carChargeRepository.findAllByCarId(CarId.fromString("55f8134a-48f2-4615-827e-eecb50615b77"));
+        assertEquals(10, allByCarId.getFirst().getAmount());
+    }
+
+    private static S3EventNotification.@NotNull S3EventNotificationRecord addTestDataToS3(String objectKey) {
         String bucketName = "bucket";
         s3Client.createBucket(CreateBucketRequest.builder()
                 .bucket(bucketName).build());
-        String objectKey = "single-record.csv";
 
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                 .bucket(bucketName)
                 .key(objectKey)
                 .build();
-        s3Client.putObject(putObjectRequest, Path.of("src", "test", "resources", "single-record.csv"));
-        S3EventNotification.S3EventNotificationRecord notificationRecord = createS3Record(bucketName, objectKey);
-
-        handleS3EventFunction.apply(new S3Event(List.of((notificationRecord))));
-
-        List<CarCharge> allByCarId = carChargeRepository.findAllByCarId(CarId.fromString("55f8134a-48f2-4615-827e-eecb50615b77"));
-
-        assertEquals(10, allByCarId.getFirst().getAmount());
+        s3Client.putObject(putObjectRequest, Path.of("src", "test", "resources", objectKey));
+        return createS3Record(bucketName, objectKey);
     }
 
 
