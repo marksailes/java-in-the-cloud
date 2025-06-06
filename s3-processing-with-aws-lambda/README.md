@@ -42,7 +42,42 @@ time out as there is no route to the public internet.
 ### Requirements
 
 - AWS Account
+- Docker
 - Java 21
 - Maven
 - AWS CDK
 
+### Build 
+
+Using Maven build the project
+
+```bash
+mvn clean package
+```
+
+This will build all the Java applications and run their tests. Docker is required to run the integration tests.
+
+### Deploy to AWS
+
+```bash
+cd infrastructure/cdk
+cdk deploy -all
+```
+
+### Testing
+
+Log into the AWS console, browse to S3 and look for a bucket starting with the name `csv-uploads-bucket-`.
+
+Upload a .csv file in the correct format. An example can be found in `software/s3-event-processor/src/test/resources/single-record.csv`
+
+Once uploaded you Lambda function will execute and write the record to Postgres.
+
+## Clean up
+
+From the CDK project use `cdk destroy -all` to remove all the project resources.
+
+You can verify this by using AWS Resource Explorer to search for resources with the tag value of `car-rentals-s3-processing`
+
+## Feedback
+
+If you have any feedback on this project, or find an issue, please create a GitHub issue and I'll do my best to correct it.
