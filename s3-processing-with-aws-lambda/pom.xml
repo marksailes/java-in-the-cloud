@@ -22,10 +22,16 @@
         <testcontainers.version>1.19.8</testcontainers.version>
         <spring-boot.version>3.3.0</spring-boot.version>
         <aws-sdk.version>2.31.45</aws-sdk.version>
+        <spring-cloud-function.version>4.3.0</spring-cloud-function.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>software.sailes.carrental</groupId>
+                <artifactId>charge-usage-domain</artifactId>
+                <version>${parent.version}</version>
+            </dependency>
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-dependencies</artifactId>
@@ -41,7 +47,12 @@
             <dependency>
                 <groupId>org.springframework.cloud</groupId>
                 <artifactId>spring-cloud-function-adapter-aws</artifactId>
-                <version>4.3.0</version>
+                <version>${spring-cloud-function.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-starter-function-web</artifactId>
+                <version>${spring-cloud-function.version}</version>
             </dependency>
             <dependency>
                 <groupId>software.amazon.awssdk</groupId>

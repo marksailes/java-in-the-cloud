@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import org.springframework.util.Assert;
 
 @Entity
+@Table(name = "car_charges")
 public class CarCharge {
 
     @EmbeddedId
@@ -59,5 +60,15 @@ public class CarCharge {
 
     public void setAmount(Integer amount) {
         this.amount = amount;
+    }
+
+    @Override
+    public String toString() {
+        return "CarCharge{" +
+                "id=" + id +
+                ", carId=" + carId +
+                ", supplier='" + supplier + '\'' +
+                ", amount=" + amount +
+                '}';
     }
 }

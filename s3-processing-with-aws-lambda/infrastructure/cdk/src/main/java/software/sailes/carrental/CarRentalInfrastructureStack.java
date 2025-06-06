@@ -36,10 +36,17 @@ public class CarRentalInfrastructureStack extends Stack {
     }
 
     private IVpc createCarRentalVpc() {
-        return Vpc.Builder.create(this, "CarRentalVpc")
+        var vpc = Vpc.Builder.create(this, "CarRentalVpc")
                 .vpcName("CarRental")
-                .natGateways(0)  // Explicitly disable NAT Gateways
+                .natGateways(0)  // Keep NAT Gateway disabled
                 .build();
+
+        // Add S3 VPC Endpoint
+        vpc.addGatewayEndpoint("S3Endpoint", GatewayVpcEndpointOptions.builder()
+                .service(GatewayVpcEndpointAwsService.S3)
+                .build());
+
+        return vpc;
     }
 
     private DatabaseSecret createDatabaseSecret() {
@@ -53,15 +60,8 @@ public class CarRentalInfrastructureStack extends Stack {
         var appSecurityGroup = SecurityGroup.Builder.create(this, "ApplicationSecurityGroup")
                 .securityGroupName("applicationSG")
                 .vpc(vpc)
-                .allowAllOutbound(true)
+                .allowAllOutbound(true)  // Allow all outbound traffic
                 .build();
-
-        // Allow Lambda to connect to RDS
-        appSecurityGroup.addEgressRule(
-                Peer.ipv4(vpc.getVpcCidrBlock()),
-                Port.tcp(5432),
-                "Allow Lambda to connect to RDS"
-        );
 
         return appSecurityGroup;
     }
@@ -112,9 +112,9 @@ public class CarRentalInfrastructureStack extends Stack {
                 .handler("software.sailes.carrental.infrastructure.db.DBSetupHandler")
                 .vpc(vpc)
                 .vpcSubnets(SubnetSelection.builder()
-                        .subnetType(SubnetType.PUBLIC)  // Lambda in public subnets to access S3
+                        .subnetType(SubnetType.PRIVATE_ISOLATED)
                         .build())
-                .allowPublicSubnet(true)
+                .allowPublicSubnet(false)
                 .securityGroups(List.of(applicationSecurityGroup))
                 .architecture(Architecture.ARM_64)
                 .environment(new HashMap<>() {{

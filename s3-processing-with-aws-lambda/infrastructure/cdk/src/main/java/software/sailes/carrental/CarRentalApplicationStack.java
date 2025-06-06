@@ -31,14 +31,14 @@ public class CarRentalApplicationStack extends Stack {
         Function carChargeCSVProcessor = Function.Builder.create(this, "CarChargeCSVProcessor")
                 .runtime(Runtime.JAVA_21)
                 .memorySize(2048)
-                .timeout(Duration.seconds(5))
+                .timeout(Duration.seconds(30))
                 .code(Code.fromAsset("../../software/s3-event-processor/target/s3-event-processor.jar"))
                 .handler("org.springframework.cloud.function.adapter.aws.FunctionInvoker::handleRequest")
                 .vpc(infrastructureStack.getCarRentalVpc())
                 .vpcSubnets(SubnetSelection.builder()
-                        .subnetType(SubnetType.PUBLIC)  // Lambda in public subnets to access S3
+                        .subnetType(SubnetType.PRIVATE_ISOLATED)  // Lambda in public subnets to access S3
                         .build())
-                .allowPublicSubnet(true)
+                .allowPublicSubnet(false)
                 .securityGroups(List.of(infrastructureStack.getApplicationSecurityGroup()))
                 .architecture(Architecture.ARM_64)
                 .environment(new HashMap<>() {{
