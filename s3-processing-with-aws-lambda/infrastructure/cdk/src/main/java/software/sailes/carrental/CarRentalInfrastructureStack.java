@@ -28,11 +28,46 @@ public class CarRentalInfrastructureStack extends Stack {
         super(scope, id, props);
 
         carRentalVpc = createCarRentalVpc();
+        SecurityGroup secretManagerEndpointSecurityGroup = createSecretManagerEndpointSecurityGroup();
+
+        // Create the Secrets Manager VPC endpoint
+        createSecretManagerVpcEndpoint(secretManagerEndpointSecurityGroup);
+
         databaseSecret = createDatabaseSecret();
         applicationSecurityGroup = createApplicationSecurityGroup(carRentalVpc);
         database = createRDSPostgresInstance(carRentalVpc, databaseSecret, applicationSecurityGroup);
 
-        createDBSetupFunction(carRentalVpc, applicationSecurityGroup, databaseSecret, database);
+        createDBSetupFunction(carRentalVpc, applicationSecurityGroup, databaseSecret);
+    }
+
+    private void createSecretManagerVpcEndpoint(SecurityGroup secretManagerEndpointSecurityGroup) {
+        InterfaceVpcEndpoint secretsManagerEndpoint = InterfaceVpcEndpoint.Builder.create(this, "SecretsManagerVpcEndpoint")
+                .vpc(carRentalVpc)
+                .service(InterfaceVpcEndpointAwsService.SECRETS_MANAGER)
+                .subnets(SubnetSelection.builder()
+                        .subnetType(SubnetType.PRIVATE_ISOLATED)
+                        .build())
+                .securityGroups(List.of(secretManagerEndpointSecurityGroup))
+                .privateDnsEnabled(true) // Important: enables private DNS resolution
+                .build();
+    }
+
+    private SecurityGroup createSecretManagerEndpointSecurityGroup() {
+        // Create security group for the VPC endpoint
+        SecurityGroup secretsManagerEndpointSecurityGroup = SecurityGroup.Builder.create(this, "SecretsManagerEndpointSG")
+                .vpc(carRentalVpc)
+                .description("Security group for Secrets Manager VPC endpoint")
+                .allowAllOutbound(false)
+                .build();
+
+        // Allow HTTPS inbound from VPC CIDR
+        secretsManagerEndpointSecurityGroup.addIngressRule(
+                Peer.ipv4(carRentalVpc.getVpcCidrBlock()),
+                Port.tcp(443),
+                "Allow HTTPS from VPC"
+        );
+
+        return secretsManagerEndpointSecurityGroup;
     }
 
     private IVpc createCarRentalVpc() {
@@ -57,13 +92,11 @@ public class CarRentalInfrastructureStack extends Stack {
     }
 
     private SecurityGroup createApplicationSecurityGroup(IVpc vpc) {
-        var appSecurityGroup = SecurityGroup.Builder.create(this, "ApplicationSecurityGroup")
+        return SecurityGroup.Builder.create(this, "ApplicationSecurityGroup")
                 .securityGroupName("applicationSG")
                 .vpc(vpc)
                 .allowAllOutbound(true)  // Allow all outbound traffic
                 .build();
-
-        return appSecurityGroup;
     }
 
     private SecurityGroup createDatabaseSecurityGroup(IVpc vpc, SecurityGroup applicationSecurityGroup) {
@@ -103,8 +136,8 @@ public class CarRentalInfrastructureStack extends Stack {
                 .build();
     }
 
-    private void createDBSetupFunction(IVpc vpc, ISecurityGroup applicationSecurityGroup, DatabaseSecret databaseSecret, DatabaseInstance database) {
-        Function.Builder.create(this, "DBSetupLambdaFunction")
+    private void createDBSetupFunction(IVpc vpc, ISecurityGroup applicationSecurityGroup, DatabaseSecret databaseSecret) {
+        Function dbSetupFunction = Function.Builder.create(this, "DBSetupLambdaFunction")
                 .runtime(Runtime.JAVA_21)
                 .memorySize(512)
                 .timeout(Duration.seconds(29))
@@ -118,13 +151,16 @@ public class CarRentalInfrastructureStack extends Stack {
                 .securityGroups(List.of(applicationSecurityGroup))
                 .architecture(Architecture.ARM_64)
                 .environment(new HashMap<>() {{
-                    put("DB_PASSWORD", getDatabaseSecretString());
+//                    put("DB_PASSWORD", getDatabaseSecretString());
                     put("DB_CONNECTION_URL", getDatabaseJDBCConnectionString());
-                    put("DB_USER", "postgres");
+//                    put("DB_USER", "postgres");
                 }})
                 .build();
+
+        databaseSecret.grantRead(dbSetupFunction);
     }
 
+    @Deprecated
     public String getDatabaseSecretString() {
         SecretValue password = databaseSecret.secretValueFromJson("password");
         // TODO FIX - get password at runtime
@@ -141,5 +177,9 @@ public class CarRentalInfrastructureStack extends Stack {
 
     public ISecurityGroup getApplicationSecurityGroup() {
         return applicationSecurityGroup;
+    }
+
+    public DatabaseSecret getDatabaseSecret() {
+        return databaseSecret;
     }
 }

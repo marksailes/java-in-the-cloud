@@ -4,21 +4,41 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.io.IOUtils;
+import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient;
+import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueRequest;
+import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueResponse;
 
 import java.io.IOException;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
 public class DBSetupHandler implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
+
+    private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final String DB_CONNECTION = System.getenv("DB_CONNECTION_URL");
-    private static final String DB_USER = System.getenv("DB_USER");
-    private static final String DB_PASSWORD = System.getenv("DB_PASSWORD");
+    private static final SecretsManagerClient secretsManagerClient = SecretsManagerClient.create();
 
     public APIGatewayProxyResponseEvent handleRequest(final APIGatewayProxyRequestEvent input, final Context context) {
-        try(var connection = DriverManager.getConnection(DB_CONNECTION, DB_USER, DB_PASSWORD)) {
-            try(var statement = connection.createStatement()) {
-                try(var sqlFile = getClass().getClassLoader().getResourceAsStream("setup.sql")) {
+        GetSecretValueResponse getSecretValueResponse = secretsManagerClient.getSecretValue(GetSecretValueRequest.builder()
+                .secretId("car-rental-db-secret").build());
+        String secretString = getSecretValueResponse.secretString();
+
+        DbSecret dbSecret;
+        try {
+            dbSecret = objectMapper.readValue(secretString, DbSecret.class);
+        } catch (JsonProcessingException e) {
+            context.getLogger().log("Error parsing secret:" + e.getMessage());
+            return new APIGatewayProxyResponseEvent()
+                    .withStatusCode(500)
+                    .withBody("Error initializing the database");
+        }
+
+        try (var connection = DriverManager.getConnection(DB_CONNECTION, dbSecret.username(), dbSecret.password())) {
+            try (var statement = connection.createStatement()) {
+                try (var sqlFile = getClass().getClassLoader().getResourceAsStream("setup.sql")) {
                     statement.executeUpdate(IOUtils.toString(sqlFile));
                     return new APIGatewayProxyResponseEvent()
                             .withStatusCode(200)

@@ -72,6 +72,14 @@ Upload a .csv file in the correct format. An example can be found in `software/s
 
 Once uploaded you Lambda function will execute and write the record to Postgres.
 
+## Cost
+
+S3 - Free Tier
+Lambda - Free Tier
+RDS - Free Tier
+VPC / S3 Gateway Endpoint - Free
+Secrets Manager InterfaceVpcEndpoint - ~$8.76 per month per AZ
+
 ## Clean up
 
 From the CDK project use `cdk destroy -all` to remove all the project resources.

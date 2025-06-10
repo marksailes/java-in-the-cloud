@@ -62,7 +62,7 @@ public class ProcessSupplierChargeS3Objects  {
         }
     }
 
-    private String processCsvStream(ResponseInputStream<GetObjectResponse> inputStream)
+    private void processCsvStream(ResponseInputStream<GetObjectResponse> inputStream)
             throws IOException {
 
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
@@ -73,16 +73,16 @@ public class ProcessSupplierChargeS3Objects  {
 
             // Process header if present
             if (!records.isEmpty()) {
-                String[] header = records.get(0);
+                String[] header = records.getFirst();
                 logger.info("CSV Header: {}", String.join(", ", header));
 
                 // Process data rows (skip header)
                 records.stream()
                         .skip(1)
-                        .forEach(row -> processRow(row));
+                        .forEach(this::processRow);
             }
 
-            return String.format("Processed %d records", records.size() - 1);
+            logger.info("Processed {} records", records.size() - 1);
 
         } catch (CsvException e) {
             throw new RuntimeException("CSV parsing error", e);

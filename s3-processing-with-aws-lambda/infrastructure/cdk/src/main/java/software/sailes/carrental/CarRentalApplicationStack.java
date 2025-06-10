@@ -9,6 +9,7 @@ import software.amazon.awscdk.services.lambda.Architecture;
 import software.amazon.awscdk.services.lambda.Code;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.Runtime;
+import software.amazon.awscdk.services.rds.DatabaseSecret;
 import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.EventType;
 import software.amazon.awscdk.services.s3.NotificationKeyFilter;
@@ -25,7 +26,7 @@ public class CarRentalApplicationStack extends Stack {
         super(scope, id, props);
 
         Bucket csvUploadsBucket = Bucket.Builder.create(this, "csvUploadsBucket")
-                .bucketName("csv-uploads-bucket-" + UUID.randomUUID().toString())
+                .bucketName("csv-uploads-bucket-" + UUID.randomUUID())
                 .build();
 
         Function carChargeCSVProcessor = Function.Builder.create(this, "CarChargeCSVProcessor")
@@ -36,21 +37,25 @@ public class CarRentalApplicationStack extends Stack {
                 .handler("org.springframework.cloud.function.adapter.aws.FunctionInvoker::handleRequest")
                 .vpc(infrastructureStack.getCarRentalVpc())
                 .vpcSubnets(SubnetSelection.builder()
-                        .subnetType(SubnetType.PRIVATE_ISOLATED)  // Lambda in public subnets to access S3
+                        .subnetType(SubnetType.PRIVATE_ISOLATED)
                         .build())
                 .allowPublicSubnet(false)
                 .securityGroups(List.of(infrastructureStack.getApplicationSecurityGroup()))
                 .architecture(Architecture.ARM_64)
                 .environment(new HashMap<>() {{
                     put("MAIN_CLASS", "software.sailes.carrental.ProcessSupplierChargeS3Objects");
-                    put("DB_PASSWORD", infrastructureStack.getDatabaseSecretString());
+//                    put("DB_PASSWORD", infrastructureStack.getDatabaseSecretString());
+                    // Moved to application.properties
                     put("DB_CONNECTION_URL", infrastructureStack.getDatabaseJDBCConnectionString());
-                    put("DB_USER", "postgres");
+//                    put("DB_USER", "postgres");
                 }})
                 .build();
 
         NotificationKeyFilter filter = NotificationKeyFilter.builder().suffix(".csv").build();
         csvUploadsBucket.addEventNotification(EventType.OBJECT_CREATED, new LambdaDestination(carChargeCSVProcessor), filter);
         csvUploadsBucket.grantRead(carChargeCSVProcessor);
+
+        DatabaseSecret databaseSecret = infrastructureStack.getDatabaseSecret();
+        databaseSecret.grantRead(carChargeCSVProcessor);
     }
 }

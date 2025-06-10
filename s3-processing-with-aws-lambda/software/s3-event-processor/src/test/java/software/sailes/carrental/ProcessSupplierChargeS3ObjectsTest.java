@@ -81,8 +81,6 @@ class ProcessSupplierChargeS3ObjectsTest {
                 )
                 .region(Region.of(localstack.getRegion()))
                 .build();
-
-        ProcessSupplierChargeS3Objects handler = new ProcessSupplierChargeS3Objects(recordCarChargedAtSupplier, s3Client);
     }
 
     @Test
