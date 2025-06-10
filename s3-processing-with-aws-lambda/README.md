@@ -82,6 +82,7 @@ Secrets Manager InterfaceVpcEndpoint - ~$8.76 per month per AZ
 
 ## Clean up
 
+[!TIP]
 From the CDK project use `cdk destroy -all` to remove all the project resources.
 
 You can verify this by using AWS Resource Explorer to search for resources with the tag value of `car-rentals-s3-processing`
