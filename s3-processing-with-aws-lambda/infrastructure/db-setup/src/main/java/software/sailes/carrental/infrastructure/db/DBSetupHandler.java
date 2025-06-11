@@ -20,23 +20,24 @@ public class DBSetupHandler implements RequestHandler<APIGatewayProxyRequestEven
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final String DB_CONNECTION = System.getenv("DB_CONNECTION_URL");
     private static final SecretsManagerClient secretsManagerClient = SecretsManagerClient.create();
+    private String username;
+    private String password;
 
-    public APIGatewayProxyResponseEvent handleRequest(final APIGatewayProxyRequestEvent input, final Context context) {
+    public DBSetupHandler() {
         GetSecretValueResponse getSecretValueResponse = secretsManagerClient.getSecretValue(GetSecretValueRequest.builder()
                 .secretId("car-rental-db-secret").build());
         String secretString = getSecretValueResponse.secretString();
-
-        DbSecret dbSecret;
         try {
-            dbSecret = objectMapper.readValue(secretString, DbSecret.class);
+            DbSecret dbSecret = objectMapper.readValue(secretString, DbSecret.class);
+            username = dbSecret.username();
+            password = dbSecret.password();
         } catch (JsonProcessingException e) {
-            context.getLogger().log("Error parsing secret:" + e.getMessage());
-            return new APIGatewayProxyResponseEvent()
-                    .withStatusCode(500)
-                    .withBody("Error initializing the database");
+            throw new RuntimeException("error with db password", e);
         }
+    }
 
-        try (var connection = DriverManager.getConnection(DB_CONNECTION, dbSecret.username(), dbSecret.password())) {
+    public APIGatewayProxyResponseEvent handleRequest(final APIGatewayProxyRequestEvent input, final Context context) {
+        try (var connection = DriverManager.getConnection(DB_CONNECTION, username, password)) {
             try (var statement = connection.createStatement()) {
                 try (var sqlFile = getClass().getClassLoader().getResourceAsStream("setup.sql")) {
                     statement.executeUpdate(IOUtils.toString(sqlFile));

@@ -30,7 +30,6 @@ public class CarRentalInfrastructureStack extends Stack {
         carRentalVpc = createCarRentalVpc();
         SecurityGroup secretManagerEndpointSecurityGroup = createSecretManagerEndpointSecurityGroup();
 
-        // Create the Secrets Manager VPC endpoint
         createSecretManagerVpcEndpoint(secretManagerEndpointSecurityGroup);
 
         databaseSecret = createDatabaseSecret();
@@ -40,20 +39,7 @@ public class CarRentalInfrastructureStack extends Stack {
         createDBSetupFunction(carRentalVpc, applicationSecurityGroup, databaseSecret);
     }
 
-    private void createSecretManagerVpcEndpoint(SecurityGroup secretManagerEndpointSecurityGroup) {
-        InterfaceVpcEndpoint secretsManagerEndpoint = InterfaceVpcEndpoint.Builder.create(this, "SecretsManagerVpcEndpoint")
-                .vpc(carRentalVpc)
-                .service(InterfaceVpcEndpointAwsService.SECRETS_MANAGER)
-                .subnets(SubnetSelection.builder()
-                        .subnetType(SubnetType.PRIVATE_ISOLATED)
-                        .build())
-                .securityGroups(List.of(secretManagerEndpointSecurityGroup))
-                .privateDnsEnabled(true) // Important: enables private DNS resolution
-                .build();
-    }
-
     private SecurityGroup createSecretManagerEndpointSecurityGroup() {
-        // Create security group for the VPC endpoint
         SecurityGroup secretsManagerEndpointSecurityGroup = SecurityGroup.Builder.create(this, "SecretsManagerEndpointSG")
                 .vpc(carRentalVpc)
                 .description("Security group for Secrets Manager VPC endpoint")
@@ -68,6 +54,18 @@ public class CarRentalInfrastructureStack extends Stack {
         );
 
         return secretsManagerEndpointSecurityGroup;
+    }
+
+    private void createSecretManagerVpcEndpoint(SecurityGroup secretManagerEndpointSecurityGroup) {
+        InterfaceVpcEndpoint.Builder.create(this, "SecretsManagerVpcEndpoint")
+                .vpc(carRentalVpc)
+                .service(InterfaceVpcEndpointAwsService.SECRETS_MANAGER)
+                .subnets(SubnetSelection.builder()
+                        .subnetType(SubnetType.PRIVATE_ISOLATED)
+                        .build())
+                .securityGroups(List.of(secretManagerEndpointSecurityGroup))
+                .privateDnsEnabled(true)
+                .build();
     }
 
     private IVpc createCarRentalVpc() {
