@@ -74,16 +74,21 @@ Once uploaded you Lambda function will execute and write the record to Postgres.
 
 ## Cost
 
-S3 - Free Tier
-Lambda - Free Tier
-RDS - Free Tier
-VPC / S3 Gateway Endpoint - Free
-Secrets Manager InterfaceVpcEndpoint - ~$8.76 per month per AZ
+| Service                                      |    Free Tier?     |                                                       Cost |
+|:---------------------------------------------|:-----------------:|-----------------------------------------------------------:|
+| S3                                           |        Yes        |                                              $0.023 per GB |
+| Lambda                                       |        Yes        |      $0.20 per 1M requests<br/>2048MB	$0.0000000333 per ms |
+| RDS                                          | Yes<br/>T4g.Micro |                                            $0.016 per hour | 
+| VPC / S3 Gateway Endpoint                    |        Yes        |                                                       Free |
+| Secrets Manager                              |        Yes        | $0.40 per secret per month<br/>$0.05 per 10,000 API calls. | 
+| Interface VPC Endpoint (for Secrets Manager) |        No         |                                    ~$8.76 per month per AZ |                   
+
+This information is provided to be a guide.
 
 ## Clean up
 
-[!TIP]
-From the CDK project use `cdk destroy -all` to remove all the project resources.
+> [!TIP]
+> From the CDK project use `cdk destroy -all` to remove all the project resources.
 
 You can verify this by using AWS Resource Explorer to search for resources with the tag value of `car-rentals-s3-processing`
 
