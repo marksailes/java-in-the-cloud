@@ -44,10 +44,7 @@ public class CarRentalApplicationStack extends Stack {
                 .architecture(Architecture.ARM_64)
                 .environment(new HashMap<>() {{
                     put("MAIN_CLASS", "software.sailes.carrental.ProcessSupplierChargeS3Objects");
-//                    put("DB_PASSWORD", infrastructureStack.getDatabaseSecretString());
-                    // Moved to application.properties
                     put("DB_CONNECTION_URL", infrastructureStack.getDatabaseJDBCConnectionString());
-//                    put("DB_USER", "postgres");
                 }})
                 .build();
 

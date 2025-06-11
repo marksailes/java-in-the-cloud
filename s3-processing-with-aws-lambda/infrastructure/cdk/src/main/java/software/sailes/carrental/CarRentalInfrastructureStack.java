@@ -151,9 +151,7 @@ public class CarRentalInfrastructureStack extends Stack {
                 .securityGroups(List.of(applicationSecurityGroup))
                 .architecture(Architecture.ARM_64)
                 .environment(new HashMap<>() {{
-//                    put("DB_PASSWORD", getDatabaseSecretString());
                     put("DB_CONNECTION_URL", getDatabaseJDBCConnectionString());
-//                    put("DB_USER", "postgres");
                 }})
                 .build();
 
