@@ -94,4 +94,5 @@ You can verify this by using AWS Resource Explorer to search for resources with 
 
 ## Feedback
 
-If you have any feedback on this project, or find an issue, please create a GitHub issue and I'll do my best to correct it.
+If you have any feedback on this project, or find an issue, please create a 
+[GitHub issue](https://github.com/marksailes/java-in-the-cloud/issues/new) and I'll do my best to correct it.
